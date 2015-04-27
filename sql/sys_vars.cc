@@ -4645,3 +4645,12 @@ static Sys_var_enum Sys_block_encryption_mode(
   "block_encryption_mode", "mode for AES_ENCRYPT/AES_DECRYPT",
   SESSION_VAR(my_aes_mode), CMD_LINE(REQUIRED_ARG),
   my_aes_opmode_names, DEFAULT(my_aes_128_ecb));
+
+
+/* SQL Check variables */
+static Sys_var_mybool Sys_sql_check(
+       "sql_check",
+       "SET sql_check= 0,1 are commands that trigger sql check"
+       "When 0 disable sql check and act as normal,"
+       "When 1 enable sql check",
+       SESSION_ONLY(sql_check), NO_CMD_LINE, DEFAULT(FALSE));

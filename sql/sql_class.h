@@ -553,6 +553,11 @@ typedef struct system_variables
 
   Gtid_specification gtid_next;
   Gtid_set_or_null gtid_next_list;
+
+  /*
+    sql check variables
+   */
+  my_bool sql_check;
 } SV;
 
 
