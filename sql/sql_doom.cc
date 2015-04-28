@@ -43,7 +43,10 @@ void doom_end_result(THD *thd)
   /* if there is a error, we just add the error to the result */
   if (thd->get_stmt_da()->is_error()) {
     doom_add_result(thd, thd->query(), 1, thd->get_stmt_da()->message());
+
+    /* clear session diagnostics info */
     thd->get_stmt_da()->reset_diagnostics_area();
+    thd->get_stmt_da()->reset_for_next_command();
   }
 
   my_eof(thd);

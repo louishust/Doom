@@ -4,5 +4,4 @@ connect (con1, localhost, root,,*NO-ONE*);
 
 set sql_check=1;
 
---disable_warnings
 create table t1(c1 int);
