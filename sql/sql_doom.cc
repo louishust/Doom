@@ -6,7 +6,7 @@ bool doom_init_result(THD *thd)
   Protocol *protocol= thd->protocol;
   DBUG_ENTER("doom_init_result");
 
-  field_list.push_back(new Item_empty_string("sql",10));
+  field_list.push_back(new Item_empty_string("sql", DOOM_SQL_LEN));
   field_list.push_back(new Item_return_int("result",1, MYSQL_TYPE_LONG));
   field_list.push_back(new Item_empty_string("comment", DOOM_COMMENT_LEN));
 
