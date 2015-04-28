@@ -130,6 +130,7 @@ SET(SQL_SHARED_SOURCES
   sql_locale.cc
   sql_manager.cc
   sql_optimizer.cc
+  sql_doom.cc
   sql_parse.cc
   sql_partition.cc
   sql_partition_admin.cc

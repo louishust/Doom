@@ -101,6 +101,8 @@
 #include "sql_analyse.h"
 #include "table_cache.h" // table_cache_manager
 
+#include "sql_doom.h"
+
 #include <algorithm>
 using std::max;
 using std::min;
@@ -1306,6 +1308,7 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
   }
   case COM_QUERY:
   {
+    bool origin_sql_check;
     if (alloc_query(thd, packet, packet_length))
       break;					// fatal error is set
     MYSQL_QUERY_START(thd->query(), thd->thread_id,
@@ -1327,6 +1330,10 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
 
     Parser_state parser_state;
     if (parser_state.init(thd, thd->query(), thd->query_length()))
+      break;
+
+    origin_sql_check= thd->variables.sql_check;
+    if (origin_sql_check && doom_init_result(thd))
       break;
 
     mysql_parse(thd, thd->query(), thd->query_length(), &parser_state);
@@ -1407,6 +1414,8 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
       mysql_parse(thd, beginning_of_next_stmt, length, &parser_state);
     }
 
+    if (origin_sql_check)
+      doom_end_result(thd);
     DBUG_PRINT("info",("query ready"));
     break;
   }
@@ -2256,6 +2265,74 @@ err:
   return TRUE;
 }
 
+/**
+  Check command saved in thd and lex->sql_command.
+
+  @param thd                       Thread handle
+
+  @todo
+    - Invalidate the table in the query cache if something changed
+    after unlocking when changes become visible.
+    TODO: this is workaround. right way will be move invalidating in
+    the unlock procedure.
+    - TODO: use check_change_password()
+
+  @retval
+    FALSE       OK
+  @retval
+    TRUE        Error
+*/
+
+int
+doom_sql_check(THD *thd)
+{
+  int res= FALSE;
+  LEX  *lex= thd->lex;
+  /* list of all tables in query */
+  TABLE_LIST *all_tables;
+  DBUG_ENTER("doom_sql_check");
+
+  lex->first_lists_tables_same();
+  /* should be assigned after making first tables same */
+  all_tables= lex->query_tables;
+
+  /*
+     Reset warning count for each query that uses tables
+     A better approach would be to reset this for any commands
+     that is not a SHOW command or a select that only access local
+     variables, but for now this is probably good enough.
+     */
+  if ((sql_command_flags[lex->sql_command] & CF_DIAGNOSTIC_STMT) != 0)
+    thd->get_stmt_da()->set_warning_info_read_only(TRUE);
+  else
+  {
+    thd->get_stmt_da()->set_warning_info_read_only(FALSE);
+    if (all_tables)
+      thd->get_stmt_da()->opt_clear_warning_info(thd->query_id);
+  }
+
+#ifndef DBUG_OFF
+  if (lex->sql_command != SQLCOM_SET_OPTION)
+    DEBUG_SYNC(thd,"before_doom_sql_check");
+#endif
+
+  switch (lex->sql_command) {
+
+  case SQLCOM_CREATE_TABLE:
+    {
+      res= doom_add_result(thd, thd->query(), 0, "");
+      break;
+    }
+  default:
+    {
+      res= doom_add_result(thd, thd->query(), 0, "Doom not support!");
+      break;
+    }
+  }
+
+  lex->unit.cleanup();
+  DBUG_RETURN(res || thd->is_error());
+}
 
 /**
   Execute command saved in thd and lex->sql_command.
@@ -6242,7 +6319,10 @@ void mysql_parse(THD *thd, char *rawbuf, uint length,
             error= 1;
           }
           else
-            error= mysql_execute_command(thd);
+            if (!thd->variables.sql_check)
+                error= mysql_execute_command(thd);
+            else
+                error= doom_sql_check(thd);
           if (error == 0 &&
               thd->variables.gtid_next.type == GTID_GROUP &&
               thd->owned_gtid.sidno != 0 &&

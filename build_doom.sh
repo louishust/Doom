@@ -1,5 +1,5 @@
 #!/bin/bash
-if [-d debug]
+if [ -d debug ]
 then
   cd debug
   make && make install

@@ -3,5 +3,5 @@ Variable_name	Value
 sql_check	OFF
 set sql_check=1;
 show variables like 'sql_check';
-Variable_name	Value
-sql_check	ON
+sql	result	comment
+show variables like 'sql_check'	0	Doom not support!

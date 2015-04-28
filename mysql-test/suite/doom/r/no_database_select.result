@@ -1,0 +1,4 @@
+set sql_check=1;
+create table t1(c1 int);
+sql	result	comment
+create table t1(c1 int)	1	No database selected
