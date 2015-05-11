@@ -13,4 +13,6 @@ bool doom_add_result(THD *thd, const char* sql, int result, const char * comment
 
 void doom_end_result(THD *thd);
 
+bool is_set_sql_check_off(THD *thd);
+
 #endif

@@ -51,3 +51,14 @@ void doom_end_result(THD *thd)
 
   my_eof(thd);
 }
+
+bool is_set_sql_check_off(THD *thd)
+{
+  char *sql = thd->query();
+  if (strcasestr(sql, "sql_check") != NULL &&
+      (strcasestr(sql,"OFF") ||strcasestr(sql, "0"))) {
+    return TRUE;
+  }
+
+  return FALSE;
+}

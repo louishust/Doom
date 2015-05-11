@@ -4,3 +4,5 @@ connect (con1,localhost,root,,"");
 show variables like 'sql_check';
 set sql_check=1;
 show variables like 'sql_check';
+set sql_check=0;
+show variables like 'sql_check';

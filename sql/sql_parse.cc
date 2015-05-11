@@ -1308,7 +1308,7 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
   }
   case COM_QUERY:
   {
-    bool origin_sql_check;
+    bool need_sql_check;
     if (alloc_query(thd, packet, packet_length))
       break;					// fatal error is set
     MYSQL_QUERY_START(thd->query(), thd->thread_id,
@@ -1332,8 +1332,11 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
     if (parser_state.init(thd, thd->query(), thd->query_length()))
       break;
 
-    origin_sql_check= thd->variables.sql_check;
-    if (origin_sql_check && doom_init_result(thd))
+    if (is_set_sql_check_off(thd))
+        thd->variables.sql_check = FALSE;
+
+    need_sql_check= thd->variables.sql_check;
+    if (need_sql_check && doom_init_result(thd))
       break;
 
     mysql_parse(thd, thd->query(), thd->query_length(), &parser_state);
@@ -1414,7 +1417,7 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
       mysql_parse(thd, beginning_of_next_stmt, length, &parser_state);
     }
 
-    if (origin_sql_check)
+    if (need_sql_check)
       doom_end_result(thd);
     DBUG_PRINT("info",("query ready"));
     break;
@@ -2325,7 +2328,7 @@ doom_sql_check(THD *thd)
     }
   default:
     {
-      res= doom_add_result(thd, thd->query(), 0, "Doom not support!");
+      res= doom_add_result(thd, thd->query(), 1, "Doom not support!");
       break;
     }
   }
